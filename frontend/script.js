@@ -5,7 +5,7 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
   const message = document.getElementById('message').value;
   const sendDate = document.getElementById('sendDate').value;
 
-  console.log("⏳ Submitting form...", email, sendDate);
+  console.log("Submitting form...", email, sendDate);
 
   const res = await fetch('/api/send-later', {
     method: 'POST',
@@ -22,5 +22,5 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
   const data = await res.json();
   document.getElementById('response').innerText = data.status;
 
-  console.log("✅ API responded:", data);
+  console.log("API responded:", data);
 });
