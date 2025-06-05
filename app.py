@@ -33,7 +33,7 @@ def schedule_email():
     message = data['message']
     send_date = data['send_date']
 
-    print(f"📩 Received message for {email} to send at {send_date}")
+    print(f"Received message for {email} to send at {send_date}")
 
 
     with sqlite3.connect("database.db") as conn:
