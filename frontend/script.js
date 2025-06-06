@@ -1,26 +1,29 @@
-document.getElementById('emailForm').addEventListener('submit', async function(e) {
+document.getElementById("emailForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
-  const email = document.getElementById('email').value;
-  const message = document.getElementById('message').value;
-  const sendDate = document.getElementById('sendDate').value;
+  const email = document.getElementById("email").value;
+  const message = document.getElementById("message").value;
+  const sendDate = document.getElementById("send_date").value;
+  const image = document.getElementById("image").files[0]; // get uploaded image
 
-  console.log("Submitting form...", email, sendDate);
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("message", message);
+  formData.append("send_date", sendDate);
+  if (image) {
+    formData.append("image", image); // only append if an image is selected
+  }
 
-  const res = await fetch('/api/send-later', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      email,
-      message,
-      send_date: sendDate
-    })
-  });
+  try {
+    const response = await fetch("/api/send-later", {
+      method: "POST",
+      body: formData,
+    });
 
-  const data = await res.json();
-  document.getElementById('response').innerText = data.status;
-
-  console.log("API responded:", data);
+    const result = await response.json();
+    document.getElementById("status").textContent = result.status;
+  } catch (error) {
+    document.getElementById("status").textContent = "Error sending message.";
+    console.error("Submission error:", error);
+  }
 });
