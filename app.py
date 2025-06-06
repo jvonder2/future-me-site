@@ -4,7 +4,7 @@ from scheduler import start_scheduler
 
 app = Flask(__name__)
 
-# Setup DB (run this once)
+# Setup DB
 def init_db():
     with sqlite3.connect("database.db") as conn:
         c = conn.cursor()
@@ -15,6 +15,10 @@ def init_db():
             send_date TEXT NOT NULL,
             sent INTEGER DEFAULT 0
         )''')
+
+# Call these on startup, even in production
+init_db()
+start_scheduler()
 
 # Serve the frontend
 @app.route('/')
@@ -35,7 +39,6 @@ def schedule_email():
 
     print(f"Received message for {email} to send at {send_date}")
 
-
     with sqlite3.connect("database.db") as conn:
         c = conn.cursor()
         c.execute("INSERT INTO messages (email, message, send_date) VALUES (?, ?, ?)",
@@ -44,8 +47,6 @@ def schedule_email():
 
     return jsonify({'status': 'Message scheduled!'})
 
-# Start the app and background scheduler
+# Local dev only
 if __name__ == '__main__':
-    init_db()
-    start_scheduler()
     app.run(debug=True, use_reloader=False)
