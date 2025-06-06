@@ -1,29 +1,46 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
 import sqlite3
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 from email_utils import send_email
+import os
 
-def send_due_emails():
-    print("Checking for due messages at", datetime.now())
+# Define the folder where uploads live
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 
+def check_and_send_due_messages():
+    print(f"🕒 Checking for due messages at {datetime.now()}")
     with sqlite3.connect("database.db") as conn:
         c = conn.cursor()
-        now = datetime.now().isoformat()
-        c.execute("SELECT * FROM messages WHERE send_date <= ? AND sent = 0", (now,))
-        due = c.fetchall()
+        c.execute(
+            "SELECT id, email, message, image_path "
+            "FROM messages "
+            "WHERE sent = 0 AND send_date <= datetime('now')"
+        )
+        due_messages = c.fetchall()
 
-        print(f"Found {len(due)} message(s) due")
+        print(f"🔍 Found {len(due_messages)} message(s) due")
 
-        for row in due:
-            print(f"Sending to {row[1]} with message: {row[2]}")
-            send_email(row[1], row[2])
-            c.execute("UPDATE messages SET sent = 1 WHERE id = ?", (row[0],))
+        for msg_id, email, content, image_filename in due_messages:
+            print(f"📨 Sending to {email} with message: {content}")
+
+            # If image_filename is not None, build full path under uploads/
+            attachment_path = None
+            if image_filename:
+                candidate = os.path.join(UPLOAD_FOLDER, image_filename)
+                if os.path.exists(candidate):
+                    attachment_path = candidate
+                else:
+                    print(f"⚠️  Attachment not found: {candidate}")
+
+            send_email(email, content, attachment_path)
+
+            c.execute("UPDATE messages SET sent = 1 WHERE id = ?", (msg_id,))
+
         conn.commit()
 
 def start_scheduler():
-    print("Scheduler starting...")
-
+    print("⏰ Scheduler starting...")
     scheduler = BackgroundScheduler()
-    scheduler.add_job(send_due_emails, 'interval', seconds=60)
+    scheduler.add_job(check_and_send_due_messages, 'interval', seconds=10)
     scheduler.start()
-    print("Scheduler started")
+    print("✅ Scheduler started")
