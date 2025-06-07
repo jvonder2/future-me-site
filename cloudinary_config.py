@@ -1,10 +1,11 @@
 # cloudinary_config.py
+
 import os
 import cloudinary
 
-# If a single CLOUDINARY_URL is set, cloudinary.config() will pick it up automatically
-cloudinary.config(secure=True)
+CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL")
+if not CLOUDINARY_URL:
+    raise RuntimeError("CLOUDINARY_URL environment variable is not set.")
 
-# Optional sanity‐check:
-if not cloudinary.config().api_secret:
-    raise RuntimeError("Missing CLOUDINARY_URL or API secret")
+# This parses CLOUDINARY_URL for you
+cloudinary.config(cloudinary_url=CLOUDINARY_URL, secure=True)
