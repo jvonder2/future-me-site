@@ -1,13 +1,3 @@
-'''
-Additions that I want to make to this code:
-1. add in more console debugging messages such as when the scheduler starts, when a message is sent, what messages need to be sent, etc.
-2. be able to clear my cloudinary images via a REST API call
-3. allow the users to upload more than one image
-4. allow the user to see immediately after they send their message what they sent in an email format
-5. make it so that the images sent are attachments not inline images
-6. add a default header to the email such as "Hello future me!"
-'''
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -33,63 +23,93 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-if-missing")
 def index():
     return render_template("index.html")
 
-@app.route("/api/send-later", methods=["POST"])
-def api_send_later():
+@app.route("/api/preview", methods=["POST"])
+def api_preview():
     # 1) Read form fields
     email = request.form.get("email", "").strip()
-    body = request.form.get("body", "").strip()
+    body  = request.form.get("body", "").strip()
     send_date_str = request.form.get("send_date", "").strip()
     if not (email and body and send_date_str):
         return jsonify({"error": "Email, message, and send date are required"}), 400
 
-    # 2) Parse the ISO-UTC string from the browser
+    # 2) Parse date
     try:
-        if send_date_str.endswith("Z"):  # Convert trailing 'Z' to '+00:00'
+        if send_date_str.endswith("Z"):
             send_date_str = send_date_str[:-1] + "+00:00"
         send_date = datetime.fromisoformat(send_date_str)
     except ValueError:
         return jsonify({"error": "Invalid date format"}), 400
 
-    # 3) Optional image upload via direct REST call to Cloudinary
-    image_url = None
-    image_file = request.files.get("image")
-    if image_file and image_file.filename:
+    # 3) Handle multi-image upload
+    image_urls = []
+    for image_file in request.files.getlist("images"):
+        if not image_file or not image_file.filename:
+            continue
         suffix = os.path.splitext(image_file.filename)[1]
-        # Save to a temp file for upload
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             image_file.save(tmp.name)
             tmp_path = tmp.name
-
         try:
-            # Construct unsigned upload endpoint
-            cfg = cloudinary_config_lib()  # Uses CLOUDINARY_URL from environment
+            cfg = cloudinary_config_lib()
             url = f"https://api.cloudinary.com/v1_1/{cfg.cloud_name}/image/upload"
-
             with open(tmp_path, "rb") as f:
                 files = {"file": f}
-                data = {
-                    "upload_preset": "unsigned_future_me",
-                    "folder": "future-me_images",
-                }
+                data  = {"upload_preset": "unsigned_future_me", "folder": "future-me_images"}
                 resp = requests.post(url, data=data, files=files)
                 resp.raise_for_status()
-                upload_res = resp.json()
-                image_url = upload_res.get("secure_url")
+                secure = resp.json().get("secure_url")
+                if secure:
+                    image_urls.append(secure)
         finally:
             os.remove(tmp_path)
 
-    # 4) Save to MongoDB
-    doc_id = save_message(
-        email=email,
-        body=body,
-        send_date=send_date,
-        image_url=image_url
+    # 4) Build preview content
+    local_time = send_date.astimezone()
+    local_str = local_time.strftime("%B %d, %Y at %I:%M %p")
+    # preserve line breaks
+    body_html = body.replace("\n", "<br>")
+    parts = []
+    parts.append(f"<p><em>Scheduled for {local_str}</em></p>")
+    parts.append(f"<p>{body_html}</p>")
+    for url in image_urls:
+        parts.append(f"<img src=\"{url}\" style=\"max-width:100%; margin-top:1em;\"/>")
+    # add action buttons
+    parts.append(
+        '<button id="confirmSend" class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Send</button>'
+        '<button id="editMessage" class="mt-4 ml-2 bg-gray-300 text-black px-4 py-2 rounded">Edit</button>'
     )
+    preview_html = "\n".join(parts)
 
+    return jsonify({
+        "preview": preview_html,
+        "data": {"email": email, "body": body, "send_date": send_date_str, "images": image_urls}
+    })
+
+@app.route("/api/schedule", methods=["POST"])
+def api_schedule():
+    payload = request.get_json() or {}
+    email = payload.get("email")
+    body  = payload.get("body")
+    send_date_str = payload.get("send_date")
+    image_urls    = payload.get("images", [])
+    # validate
+    if not (email and body and send_date_str):
+        return jsonify({"error": "Missing scheduling data"}), 400
+    try:
+        if send_date_str.endswith("Z"):
+            send_date_str = send_date_str[:-1] + "+00:00"
+        send_date = datetime.fromisoformat(send_date_str)
+    except ValueError:
+        return jsonify({"error": "Invalid date format"}), 400
+
+    doc_id = save_message(email=email, body=body, send_date=send_date, image_urls=image_urls)
+    print(f"🗓️ Scheduled message {doc_id} for {email} at {send_date.astimezone().isoformat()}")
     return jsonify({"status": "scheduled", "id": doc_id}), 200
 
-# Start the scheduler once
-start_scheduler()
+# Start scheduler once
+def main():
+    start_scheduler()
+    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)))
+    main()

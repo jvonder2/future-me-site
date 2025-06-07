@@ -30,10 +30,11 @@
         💌 Message from Your Past Self
       </h1>
       <p class="text-center text-gray-600 mb-8">
-        Write a message now. Pick a future date. Optionally upload a photo.
+        Write a message now. Pick a future date. Optionally upload one or more photos.
       </p>
 
       <form id="emailForm" class="space-y-4" enctype="multipart/form-data">
+        <!-- Your Email -->
         <div>
           <label for="email" class="block text-sm font-medium text-gray-700"
             >Your Email</label
@@ -48,6 +49,7 @@
           />
         </div>
 
+        <!-- Your Message (prefilled greeting) -->
         <div>
           <label for="body" class="block text-sm font-medium text-gray-700"
             >Your Message</label
@@ -57,11 +59,13 @@
             name="body"
             rows="4"
             required
-            placeholder="What would you like to tell your future self?"
             class="mt-1 w-full px-4 py-2 border rounded-md focus:ring-primary focus:border-primary"
-          ></textarea>
+          >Hello future me!
+
+</textarea>
         </div>
 
+        <!-- Send Date -->
         <div>
           <label for="send_date" class="block text-sm font-medium text-gray-700"
             >Send Date</label
@@ -75,19 +79,22 @@
           />
         </div>
 
+        <!-- Upload Photos (multi) -->
         <div>
-          <label for="image" class="block text-sm font-medium text-gray-700"
-            >Optional Photo 📸</label
+          <label for="images" class="block text-sm font-medium text-gray-700"
+            >Upload Photos (optional)</label
           >
           <input
             type="file"
-            id="image"
-            name="image"
+            id="images"
+            name="images"
             accept="image/*"
+            multiple
             class="mt-1"
           />
         </div>
 
+        <!-- Submit -->
         <button
           type="submit"
           class="w-full bg-primary hover:bg-accent text-white py-2 rounded-md font-semibold transition"
@@ -96,7 +103,9 @@
         </button>
       </form>
 
+      <!-- Status & Preview -->
       <p id="status" class="mt-4 text-center text-green-600 font-medium"></p>
+      <div id="preview" class="mt-4 p-4 border rounded bg-gray-50"></div>
     </div>
 
     <script src="script.js"></script>

@@ -1,40 +1,46 @@
-# email_utils.py
-
 from dotenv import load_dotenv
-import os
-import smtplib
-from email.message import EmailMessage
-import mimetypes
-
 load_dotenv()
 
-EMAIL_ADDRESS = os.getenv("GMAIL_USER")
+import os
+import requests
+import mimetypes
+from email.message import EmailMessage
+import smtplib
+
+EMAIL_ADDRESS  = os.getenv("GMAIL_USER")
 EMAIL_PASSWORD = os.getenv("GMAIL_PASS")
 
-def send_email(to_email, subject, content, image_path=None, html=False):
+def send_email(to_email, subject, content, images: list[str] = None, html: bool = False):
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = EMAIL_ADDRESS
-    msg["To"] = to_email
+    msg["From"]    = EMAIL_ADDRESS
+    msg["To"]      = to_email
 
-    if html:
-        msg.set_content("This message contains HTML. Please view in an HTML client.")
-        msg.add_alternative(content, subtype="html")
-    else:
-        msg.set_content(content)
+    # 1) Plain-text version: exactly what the user typed
+    msg.set_content(content)
 
-    if image_path and os.path.exists(image_path):
-        mime_type, _ = mimetypes.guess_type(image_path)
+    # 2) HTML alternative: translate \n into <br> so line-breaks show up
+    html_body = content.replace("\n", "<br>")
+    msg.add_alternative(html_body, subtype="html")
+
+    # 3) Attach images as real attachments
+    for img in images or []:
+        fname = os.path.basename(img)
+        # Download if it's a URL
+        if img.startswith("http"):
+            resp = requests.get(img)
+            resp.raise_for_status()
+            data = resp.content
+        else:
+            with open(img, "rb") as f:
+                data = f.read()
+
+        mime_type, _ = mimetypes.guess_type(fname)
         if mime_type:
             maintype, subtype = mime_type.split("/", 1)
-            with open(image_path, "rb") as img:
-                msg.add_attachment(
-                    img.read(),
-                    maintype=maintype,
-                    subtype=subtype,
-                    filename=os.path.basename(image_path)
-                )
+            msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=fname)
 
+    # 4) Send via SMTP
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         smtp.send_message(msg)

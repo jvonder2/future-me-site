@@ -1,43 +1,46 @@
-# wipe_cloudinary.py
-
-from dotenv import load_dotenv
+#!/usr/bin/env python3
+"""
+Standalone script to delete all images in a given Cloudinary folder prefix.
+Run with:
+    python database_info/wipecloudinary.py
+"""
 import os
-import cloudinary
-from cloudinary.api import delete_resources_by_prefix
-import urllib.parse
+import sys
+from dotenv import load_dotenv
 
+# Ensure project root is on sys.path so we can import cloudinary_config
+script_dir   = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(script_dir, os.pardir))
+sys.path.insert(0, project_root)
 
-# 1) Load .env so CLOUDINARY_URL is in os.environ
-load_dotenv()
+# Load environment variables, explicitly pointing to project-root .env
+dotenv_path = os.path.join(project_root, '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    load_dotenv()  # fallback to default
 
-cloudinary_url = os.environ.get("CLOUDINARY_URL")
-if not cloudinary_url:
-    raise RuntimeError(
-        "CLOUDINARY_URL not set. "
-        "Please add CLOUDINARY_URL=cloudinary://<API_KEY>:<API_SECRET>@<CLOUD_NAME> "
-        "to your .env"
-    )
+import cloudinary_config        # loads and configures Cloudinary from CLOUDINARY_URL
+from cloudinary import api as cloudinary_api
 
-# 2) Parse it: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-parsed = urllib.parse.urlparse(cloudinary_url)
-# parsed.netloc == "API_KEY:API_SECRET@CLOUD_NAME"
-creds, _, cloud_name = parsed.netloc.rpartition("@")
-api_key, _, api_secret = creds.partition(":")
+# Folder prefix used when uploading
+PREFIX = "future-me_images"
 
-# 3) Configure the SDK explicitly
-cloudinary.config(
-    cloud_name=cloud_name,
-    api_key=api_key,
-    api_secret=api_secret,
-    secure=True
-)
-cfg = cloudinary.config()
-print("Using Cloudinary config:", cfg.cloud_name, cfg.api_key, cfg.api_secret)
+def clear_images(prefix=PREFIX):
+    print(f"🗑️  Clearing all Cloudinary resources with prefix '{prefix}'…")
+    try:
+        result = cloudinary_api.delete_resources_by_prefix(prefix)
+        print("Result:", result)
+        return result
+    except Exception as e:
+        print(f"⚠️  Failed to clear images: {e}")
+        print("Make sure CLOUDINARY_URL is set correctly in .env and points to valid credentials.")
+        sys.exit(1)
 
-# 4) Delete everything under the "future-me_images" folder
-result = delete_resources_by_prefix("future-me_images")
-
-# 5) Report what was deleted
-print("✅ Cloudinary wiped. Deleted resources:")
-for public_id, status in result.get("deleted", {}).items():
-    print(f" • {public_id}: {status}")
+if __name__ == "__main__":
+    confirm = input(f"Are you sure you want to permanently delete everything under '{PREFIX}'? (yes/no) ")
+    if confirm.strip().lower() == "yes":
+        clear_images()
+    else:
+        print("Aborted. No images were deleted.")
+        sys.exit(1)
