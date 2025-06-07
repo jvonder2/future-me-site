@@ -6,91 +6,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Send a Message to Future You</title>
-    <meta name="description" content="Send a heartfelt message—and even a photo—to your future self. A fun and meaningful way to reflect, dream, and remember." />
-    <meta name="keywords" content="future message, digital time capsule, email to future self, send later, future letter" />
-    <meta name="author" content="FutureMe Project" />
-    <meta property="og:title" content="Send a Message to Future You" />
-    <meta property="og:description" content="Write a message now. We'll deliver it to your future self when the time comes." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://messagefrompastme.org" />
-    <meta property="og:image" content="https://messagefrompastme.org/thumbnail.png" />
+    <meta
+      name="description"
+      content="Send a heartfelt message—and even a photo—to your future self."
+    />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            colors: {
-              primary: '#2563eb',
-              accent: '#1e40af',
-            },
+            colors: { primary: "#2563eb", accent: "#1e40af" },
           },
         },
       };
     </script>
   </head>
 
-  <body class="bg-gradient-to-br from-blue-100 to-white min-h-screen flex items-center justify-center font-sans">
+  <body
+    class="bg-gradient-to-br from-blue-100 to-white min-h-screen flex items-center justify-center font-sans"
+  >
     <div class="bg-white p-8 rounded-xl shadow-2xl max-w-xl w-full">
       <h1 class="text-3xl font-bold text-center text-accent mb-6">
         💌 Message from Your Past Self
       </h1>
       <p class="text-center text-gray-600 mb-8">
-        Write a message now. Pick a future date. We'll deliver it when the time comes.
+        Write a message now. Pick a future date. Optionally upload a photo.
       </p>
 
       <form id="emailForm" class="space-y-4" enctype="multipart/form-data">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Your Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700"
+            >Your Email</label
+          >
           <input
             type="email"
             id="email"
+            name="email"
             required
             placeholder="you@example.com"
-            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+            class="mt-1 w-full px-4 py-2 border rounded-md focus:ring-primary focus:border-primary"
           />
         </div>
 
         <div>
-          <label for="message" class="block text-sm font-medium text-gray-700">Your Message</label>
+          <label for="body" class="block text-sm font-medium text-gray-700"
+            >Your Message</label
+          >
           <textarea
-            id="message"
+            id="body"
+            name="body"
             rows="4"
             required
             placeholder="What would you like to tell your future self?"
-            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+            class="mt-1 w-full px-4 py-2 border rounded-md focus:ring-primary focus:border-primary"
           ></textarea>
         </div>
 
         <div>
-          <label for="send_date" class="block text-sm font-medium text-gray-700">Send Date</label>
+          <label for="send_date" class="block text-sm font-medium text-gray-700"
+            >Send Date</label
+          >
           <input
             type="datetime-local"
             id="send_date"
+            name="send_date"
             required
-            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+            class="mt-1 w-full px-4 py-2 border rounded-md focus:ring-primary focus:border-primary"
           />
         </div>
 
         <div>
-          <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Optional Photo 📸</label>
+          <label for="image" class="block text-sm font-medium text-gray-700"
+            >Optional Photo 📸</label
+          >
           <input
             type="file"
             id="image"
+            name="image"
             accept="image/*"
-            capture="environment"
-            class="block text-sm text-gray-600
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-md file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-primary file:text-white
-                  hover:file:bg-accent"
+            class="mt-1"
           />
         </div>
 
-
         <button
           type="submit"
-          class="w-full bg-primary hover:bg-accent text-white py-2 px-4 rounded-md font-semibold transition"
+          class="w-full bg-primary hover:bg-accent text-white py-2 rounded-md font-semibold transition"
         >
           📬 Schedule Message
         </button>

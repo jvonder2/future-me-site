@@ -1,29 +1,49 @@
-document.getElementById("emailForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
+// frontend/script.js
 
-  const email = document.getElementById("email").value;
-  const message = document.getElementById("message").value;
-  const sendDate = document.getElementById("send_date").value;
-  const image = document.getElementById("image").files[0]; // get uploaded image
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("emailForm");
+  const status = document.getElementById("status");
 
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("message", message);
-  formData.append("send_date", sendDate);
-  if (image) {
-    formData.append("image", image); // only append if an image is selected
-  }
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    status.textContent = "";
 
-  try {
-    const response = await fetch("/api/send-later", {
-      method: "POST",
-      body: formData,
-    });
+    // Collect inputs
+    const email = document.getElementById("email").value.trim();
+    const body = document.getElementById("body").value.trim();
+    const sendDate = document.getElementById("send_date").value.trim();
+    const imageInput = document.getElementById("image");
 
-    const result = await response.json();
-    document.getElementById("status").textContent = result.status;
-  } catch (error) {
-    document.getElementById("status").textContent = "Error sending message.";
-    console.error("Submission error:", error);
-  }
+    if (!email || !body || !sendDate) {
+      status.textContent = "Please fill in email, message, and send date.";
+      return;
+    }
+
+    // Build FormData
+    const fd = new FormData();
+    fd.append("email", email);
+    fd.append("body", body);
+    fd.append("send_date", sendDate);
+    if (imageInput.files.length) {
+      fd.append("image", imageInput.files[0]);
+    }
+
+    try {
+      const resp = await fetch("/api/send-later", {
+        method: "POST",
+        body: fd,
+      });
+      const result = await resp.json();
+
+      if (resp.ok) {
+        status.textContent = `📬 Scheduled! (ID: ${result.id})`;
+        form.reset();
+      } else {
+        status.textContent = `Error: ${result.error || "Unknown error"}`;
+      }
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Network error. Check console.";
+    }
+  });
 });
