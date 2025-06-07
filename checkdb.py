@@ -1,3 +1,5 @@
+# checkdb.py
+
 from db import messages_coll
 from datetime import datetime, timezone
 from bson.objectid import ObjectId
@@ -24,7 +26,7 @@ def get_pending_messages() -> list:
 
 def mark_as_sent(message_id: str) -> int:
     result = messages_coll.update_one(
-        {"_id": ObjectId(message_id)},
-        {"$set": {"sent": True, "sent_at": datetime.now(timezone.utc)}}
+        { "_id": ObjectId(message_id) },
+        { "$set": { "sent": True, "sent_at": datetime.now(timezone.utc) } }
     )
     return result.modified_count
