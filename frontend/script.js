@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fd.append("email", email);
     fd.append("body", body);
     fd.append("send_date", new Date(rawLocal).toISOString());
+    fd.append("raw_local", rawLocal);  // send the raw local value for preview formatting
     for (let file of imageInput.files) {
       fd.append("images", file);
     }

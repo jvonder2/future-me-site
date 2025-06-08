@@ -26,13 +26,14 @@ def index():
 @app.route("/api/preview", methods=["POST"])
 def api_preview():
     # 1) Read form fields
-    email = request.form.get("email", "").strip()
-    body  = request.form.get("body", "").strip()
+    email         = request.form.get("email", "").strip()
+    body          = request.form.get("body", "").strip()
     send_date_str = request.form.get("send_date", "").strip()
-    if not (email and body and send_date_str):
+    raw_local     = request.form.get("raw_local", "").strip()
+    if not (email and body and send_date_str and raw_local):
         return jsonify({"error": "Email, message, and send date are required"}), 400
 
-    # 2) Parse date
+    # 2) Parse date (for future scheduling -- still use UTC internally)
     try:
         if send_date_str.endswith("Z"):
             send_date_str = send_date_str[:-1] + "+00:00"
@@ -63,17 +64,20 @@ def api_preview():
         finally:
             os.remove(tmp_path)
 
-    # 4) Build preview content
-    local_time = send_date.astimezone()
-    local_str = local_time.strftime("%B %d, %Y at %I:%M %p")
-    # preserve line breaks
+    # 4) Build preview content using raw_local to avoid timezone shifts
+    try:
+        raw_dt = datetime.fromisoformat(raw_local)
+        display_time = raw_dt.strftime("%B %d, %Y at %I:%M %p")
+    except Exception:
+        display_time = raw_local
+
     body_html = body.replace("\n", "<br>")
-    parts = []
-    parts.append(f"<p><em>Scheduled for {local_str}</em></p>")
-    parts.append(f"<p>{body_html}</p>")
+    parts = [
+        f"<p><em>Scheduled for {display_time}</em></p>",
+        f"<p>{body_html}</p>"
+    ]
     for url in image_urls:
         parts.append(f"<img src=\"{url}\" style=\"max-width:100%; margin-top:1em;\"/>")
-    # add action buttons
     parts.append(
         '<button id="confirmSend" class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Send</button>'
         '<button id="editMessage" class="mt-4 ml-2 bg-gray-300 text-black px-4 py-2 rounded">Edit</button>'
@@ -82,17 +86,21 @@ def api_preview():
 
     return jsonify({
         "preview": preview_html,
-        "data": {"email": email, "body": body, "send_date": send_date_str, "images": image_urls}
-    })
+        "data": {
+            "email":    email,
+            "body":     body,
+            "send_date": send_date_str,
+            "images":   image_urls
+        }
+    }), 200
 
 @app.route("/api/schedule", methods=["POST"])
 def api_schedule():
     payload = request.get_json() or {}
-    email = payload.get("email")
-    body  = payload.get("body")
+    email         = payload.get("email")
+    body          = payload.get("body")
     send_date_str = payload.get("send_date")
     image_urls    = payload.get("images", [])
-    # validate
     if not (email and body and send_date_str):
         return jsonify({"error": "Missing scheduling data"}), 400
     try:
@@ -102,8 +110,13 @@ def api_schedule():
     except ValueError:
         return jsonify({"error": "Invalid date format"}), 400
 
-    doc_id = save_message(email=email, body=body, send_date=send_date, image_urls=image_urls)
-    print(f"🗓️ Scheduled message {doc_id} for {email} at {send_date.astimezone().isoformat()}")
+    doc_id = save_message(
+        email=email,
+        body=body,
+        send_date=send_date,
+        image_urls=image_urls
+    )
+    print(f"🗓️ Scheduled message {doc_id} for {email} at {send_date.isoformat()}")
     return jsonify({"status": "scheduled", "id": doc_id}), 200
 
 # Start scheduler once
