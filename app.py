@@ -119,6 +119,8 @@ def api_schedule():
     print(f"🗓️ Scheduled message {doc_id} for {email} at {send_date.isoformat()}")
     return jsonify({"status": "scheduled", "id": doc_id}), 200
 
+start_scheduler()
+
 # Start scheduler once
 def main():
     start_scheduler()
